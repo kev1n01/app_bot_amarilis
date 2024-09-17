@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { FileDropzone, ProgressBar } from '@skeletonlabs/skeleton';
+	import { FileDropzone, ProgressBar, ProgressRadial } from '@skeletonlabs/skeleton';
 	import { PUBLIC_PROCESS_FILES_SERVER } from '$env/static/public';
 	import { goto } from '$app/navigation';
 
 	let files: FileList;
 	let processing = false;
+	let deleting = false;
 	let error = false;
+	let msg = '';
 
 	function onChangeHandler(e: Event): void {
 		files = files;
@@ -27,22 +29,60 @@
 		}
 		processing = false;
 	}
+
+	async function refreshDb() {
+		deleting = true;
+		const response = await fetch(`${PUBLIC_PROCESS_FILES_SERVER}/refresh`, {
+			method: 'GET'
+		});
+		let result = await response.json();
+		if (result && result.success) {
+			msg = 'Base de datos borrada';
+		}else{
+			msg = 'Base de datos no borrada';
+			console.log(msg);
+		}
+		deleting = false;
+	}
+
 </script>
 
 <div class="flex flex-col h-screen bg-[#212121]">
+	{#if msg}
+		<div class="px-4 py-2 rounded-lg absolute top-5 right-5 bg-white z-10 text-black">
+			<p>{ msg }</p>
+		</div>
+	{/if}
+		
 	<div class="flex-1 flex flex-col">
 		<!-- Topbar -->
 		<div class="backdrop-blur-lg shadow p-4 items-center flex text-gray-200">
 			<div class="flex justify-center w-full">
 				<div>
-					<h2 class="font-bold">🤖 Bot Amarilis - Subir Archivos</h2>
+					<h3 class="font-bold">Bot Amarilis - Subir Archivos</h3>
 				</div>
 			</div>
 		</div>
 		<!-- Topbar -->
+		 
+		<!-- Buttons container -->
+		<div class=" mt-2 space-y-4 max-w-4xl w-full mx-auto p-4">
+			<div class="flex justify-end gap-3">
+				<a href="/bot" class="w-auto btn bg-blue-600 hover:bg-blue-800 text-white py-2 rounded-lg">
+					Conversar con bot
+				</a>
+				<button on:click={refreshDb} class="w-auto btn bg-red-600 hover:bg-red-800 text-white py-2 rounded-lg">
+					{#if deleting}
+					<ProgressRadial value={undefined}  width="w-5 mr-2" />
+					{/if}
+					Borrar información
+				</button>
+			</div>
+		</div>
+		<!-- Buttons container -->
 
 		<!-- File upload container -->
-		<div class="flex-1 overflow-y-auto p-4 space-y-4">
+		<div class="flex-1 overflow-y-auto p-4 space-y-4 ">
 			<form
 				method="POST"
 				on:submit|preventDefault={startProcessing}
@@ -77,13 +117,13 @@
 					</FileDropzone>
 
 					{#if files}
-						<div class="mt-4 bg-slate-600 p-4 rounded-lg">
+						<div class="mt-4 bg-slate-600 p-4 rounded-lg h-auto max-h-96 overflow-y-auto">
 							<h3 class="text-white mb-2">Archivos seleccionados:</h3>
 							<ol class="list w-full space-y-2">
 								{#each Array.from(files) as document, i}
 									<li class="flex items-center text-gray-300">
 										<span class="badge-icon p-2 bg-blue-500 text-white rounded-full mr-2"
-											>{i + 1}</span
+											>{i + 1}</span	
 										>
 										<span>{document.name}</span>
 									</li>
@@ -99,7 +139,7 @@
 					{/if}
 				</div>
 			</form>
-
+			
 			{#if processing}
 				<div class="bg-slate-700 p-4 rounded-lg mt-4 max-w-4xl mx-auto">
 					<p class="text-white mb-2">Procesando archivos...</p>
@@ -108,7 +148,7 @@
 			{/if}
 
 			{#if error}
-				<div class="bg-red-600 text-white p-4 rounded-lg mt-4 max-w-4xl mx-auto">
+				<div class="bg-red-500 text-white p-4 rounded-lg mt-4 max-w-4xl mx-auto">
 					<h3 class="font-bold">Error al procesar los archivos</h3>
 					<p>Por favor, intente nuevamente.</p>
 				</div>
